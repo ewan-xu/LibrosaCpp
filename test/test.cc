@@ -47,9 +47,9 @@ int main(int argc, char* argv[])
     return -1;
   }
   std::vector<float> x(samples);
-  std::transform(tmp.begin(), tmp.end(), x.begin(), 
+  std::transform(tmp.begin(), tmp.end(), x.begin(),
     [](int16_t a) {
-    return static_cast<float>(a) / 32767.f; 
+    return static_cast<float>(a) / 32767.f;
   });
 
   int n_fft = 400;
@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
   int fmin = 80;
   int fmax = 7600;
   std::vector<std::vector<std::complex<float>>> X = librosa::Feature::stft(x, n_fft, n_hop, "hann", false, "reflect");
-  std::vector<std::vector<float>> mels = librosa::Feature::melspectrogram(x, sr, n_fft, n_hop, "hann", false, "reflect", 2.f,n_mel, fmin, fmax);
+  std::vector<std::vector<float>> mels = librosa::Feature::melspectrogram(x, sr, n_fft, n_hop, "hann", false, "reflect", 2.f, n_mel, fmin, fmax);
 
   return 0;
 }

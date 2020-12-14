@@ -29,7 +29,7 @@
 /// \brief c++ implemention of librosa
 ///
 namespace librosa{
-  
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif // !M_PI
@@ -41,42 +41,42 @@ typedef Eigen::Matrix<std::complex<float>, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 namespace internal{
 
-Vectorf pad(Vectorf& x, int left, int right, const std::string& mode, float value){
+Vectorf pad(Vectorf &x, int left, int right, const std::string &mode, float value){
   Vectorf x_paded = Vectorf::Constant(left + x.size() + right, value);
-	x_paded.segment(left, x.size()) = x;
+  x_paded.segment(left, x.size()) = x;
 
-	if (mode.compare("reflect") == 0){
-		for (int i = 0; i < left; ++i){
-			x_paded[i] = x[left - i];
-		}
-		for (int i = left; i < left + right; ++i){
-			x_paded[i + x.size()] = x[x.size() - 2 - i + left];
-		}
-	}
+  if (mode.compare("reflect") == 0){
+    for (int i = 0; i < left; ++i){
+      x_paded[i] = x[left - i];
+    }
+    for (int i = left; i < left + right; ++i){
+      x_paded[i + x.size()] = x[x.size() - 2 - i + left];
+    }
+  }
 
-	if (mode.compare("symmetric") == 0){
-		for (int i = 0; i < left; ++i){
-			x_paded[i] = x[left - i - 1];
-		}
-		for (int i = left; i < left + right; ++i){
-			x_paded[i + x.size()] = x[x.size() - 1 - i + left];
-		}
-	}
+  if (mode.compare("symmetric") == 0){
+    for (int i = 0; i < left; ++i){
+      x_paded[i] = x[left - i - 1];
+    }
+    for (int i = left; i < left + right; ++i){
+      x_paded[i + x.size()] = x[x.size() - 1 - i + left];
+    }
+  }
 
-	if (mode.compare("edge") == 0){
-		for (int i = 0; i < left; ++i){
-			x_paded[i] = x[0];
-		}
-		for (int i = left; i < left + right; ++i){
-			x_paded[i + x.size()] = x[x.size()-1];
-		}
-	}
-	return x_paded;
+  if (mode.compare("edge") == 0){
+    for (int i = 0; i < left; ++i){
+      x_paded[i] = x[0];
+    }
+    for (int i = left; i < left + right; ++i){
+      x_paded[i + x.size()] = x[x.size() - 1];
+    }
+  }
+  return x_paded;
 }
 
-Matrixcf stft(Vectorf& x, int n_fft, int n_hop, const std::string& win, bool center, const std::string& mode) {
+Matrixcf stft(Vectorf &x, int n_fft, int n_hop, const std::string &win, bool center, const std::string &mode){
   // hanning
-  Vectorf window = 0.5*(1.f - (Vectorf::LinSpaced(n_fft, 0.f, static_cast<float>(n_fft - 1))*2.f*M_PI / static_cast<float>(n_fft)).array().cos());
+  Vectorf window = 0.5 * (1.f - (Vectorf::LinSpaced(n_fft, 0.f, static_cast<float>(n_fft - 1)) * 2.f * M_PI / static_cast<float>(n_fft)).array().cos());
 
   int pad_len = center ? n_fft / 2 : 0;
   Vectorf x_paded = pad(x, pad_len, pad_len, mode, 0.);
@@ -86,78 +86,77 @@ Matrixcf stft(Vectorf& x, int n_fft, int n_hop, const std::string& win, bool cen
   Matrixcf X(n_frames, n_fft);
   Eigen::FFT<float> fft;
 
-  for (int i = 0; i < n_frames; ++i) {
-    Vectorf x_frame = window.array()*x_paded.segment(i*n_hop, n_fft).array();
+  for (int i = 0; i < n_frames; ++i){
+    Vectorf x_frame = window.array() * x_paded.segment(i * n_hop, n_fft).array();
     X.row(i) = fft.fwd(x_frame);
   }
   return X.leftCols(n_f);
 }
 
-Matrixf spectrogram(Matrixcf& X, float power=1.f){
-	return X.cwiseAbs().array().pow(power);
+Matrixf spectrogram(Matrixcf &X, float power = 1.f){
+  return X.cwiseAbs().array().pow(power);
 }
 
 Matrixf melfilter(int sr, int n_fft, int n_mels, int fmin, int fmax){
   int n_f = n_fft / 2 + 1;
-	Vectorf fft_freqs = (Vectorf::LinSpaced(n_f, 0.f, static_cast<float>(n_f-1)))*static_cast<float>(sr) / static_cast<float>(n_fft);
+  Vectorf fft_freqs = (Vectorf::LinSpaced(n_f, 0.f, static_cast<float>(n_f - 1))) * static_cast<float>(sr) / static_cast<float>(n_fft);
 
-	float f_min = 0.f;
-	float f_sp = 200.f / 3.f;
-	float min_log_hz = 1000.f; 
-	float min_log_mel = (min_log_hz - f_min) / f_sp;
-	float logstep = logf(6.4f) / 27.f;
+  float f_min = 0.f;
+  float f_sp = 200.f / 3.f;
+  float min_log_hz = 1000.f;
+  float min_log_mel = (min_log_hz - f_min) / f_sp;
+  float logstep = logf(6.4f) / 27.f;
 
-	auto hz_to_mel = [=](int hz, bool htk = false)->float {
-		if (htk){
-			return 2595.0f * log10f(1.0f + hz / 700.0f);
-		}
-		float mel = (hz - f_min) / f_sp;
-		if (hz >= min_log_hz){
-			mel = min_log_mel + logf(hz / min_log_hz) / logstep;
-		}
-		return mel;
-	};
-	auto mel_to_hz = [=](Vectorf& mels, bool htk = false)->Vectorf {
-		if (htk){
-			return 700.0f * (Vectorf::Constant(n_mels + 2, 10.f).array().pow(mels.array() / 2595.0f) - 1.0f);
-		}
-		return (mels.array() > min_log_mel).select(((mels.array() - min_log_mel)*logstep).exp()*min_log_hz, (mels*f_sp).array() + f_min);
-	};
-	
+  auto hz_to_mel = [=](int hz, bool htk = false) -> float {
+    if (htk){
+      return 2595.0f * log10f(1.0f + hz / 700.0f);
+    }
+    float mel = (hz - f_min) / f_sp;
+    if (hz >= min_log_hz){
+      mel = min_log_mel + logf(hz / min_log_hz) / logstep;
+    }
+    return mel;
+  };
+  auto mel_to_hz = [=](Vectorf &mels, bool htk = false) -> Vectorf {
+    if (htk){
+      return 700.0f * (Vectorf::Constant(n_mels + 2, 10.f).array().pow(mels.array() / 2595.0f) - 1.0f);
+    }
+    return (mels.array() > min_log_mel).select(((mels.array() - min_log_mel) * logstep).exp() * min_log_hz, (mels * f_sp).array() + f_min);
+  };
+
   float min_mel = hz_to_mel(fmin);
-	float max_mel = hz_to_mel(fmax);
-	Vectorf mels = Vectorf::LinSpaced(n_mels + 2, min_mel, max_mel);
-	Vectorf mel_f = mel_to_hz(mels);
-	Vectorf fdiff = mel_f.segment(1, mel_f.size() - 1) - mel_f.segment(0, mel_f.size() - 1);
-	Matrixf ramps = mel_f.replicate(n_f, 1).transpose().array() - fft_freqs.replicate(n_mels + 2, 1).array();
+  float max_mel = hz_to_mel(fmax);
+  Vectorf mels = Vectorf::LinSpaced(n_mels + 2, min_mel, max_mel);
+  Vectorf mel_f = mel_to_hz(mels);
+  Vectorf fdiff = mel_f.segment(1, mel_f.size() - 1) - mel_f.segment(0, mel_f.size() - 1);
+  Matrixf ramps = mel_f.replicate(n_f, 1).transpose().array() - fft_freqs.replicate(n_mels + 2, 1).array();
 
-	Matrixf lower = -ramps.topRows(n_mels).array() / fdiff.segment(0, n_mels).transpose().replicate(1, n_f).array();
-	Matrixf upper = ramps.bottomRows(n_mels).array() / fdiff.segment(1, n_mels).transpose().replicate(1, n_f).array();
-	Matrixf weights = (lower.array() < upper.array()).select(lower, upper).cwiseMax(0);
+  Matrixf lower = -ramps.topRows(n_mels).array() / fdiff.segment(0, n_mels).transpose().replicate(1, n_f).array();
+  Matrixf upper = ramps.bottomRows(n_mels).array() / fdiff.segment(1, n_mels).transpose().replicate(1, n_f).array();
+  Matrixf weights = (lower.array() < upper.array()).select(lower, upper).cwiseMax(0);
 
-	auto enorm = (2.0 / (mel_f.segment(2, n_mels) - mel_f.segment(0, n_mels)).array()).transpose().replicate(1, n_f);
-	weights = weights.array() * enorm;
+  auto enorm = (2.0 / (mel_f.segment(2, n_mels) - mel_f.segment(0, n_mels)).array()).transpose().replicate(1, n_f);
+  weights = weights.array() * enorm;
 
-	return weights;
+  return weights;
 }
 
-Matrixf melspectrogram(Vectorf& x, int sr, int n_fft, int n_hop,
-  const std::string& win, bool center,
-  const std::string& mode, float power, 
-  int n_mels, int fmin, int fmax){
+Matrixf melspectrogram(Vectorf &x, int sr, int n_fft, int n_hop,
+                        const std::string &win, bool center,
+                        const std::string &mode, float power,
+                        int n_mels, int fmin, int fmax){
   Matrixcf X = stft(x, n_fft, n_hop, win, center, mode);
   Matrixf mel_basis = melfilter(sr, n_fft, n_mels, fmin, fmax);
-  Matrixf sp = spectrogram(X,power);
-  Matrixf mel = mel_basis*sp.transpose();
-	return mel;
+  Matrixf sp = spectrogram(X, power);
+  Matrixf mel = mel_basis * sp.transpose();
+  return mel;
 }
 
-}
+} // namespace internal
 
 class Feature
 {
 public:
-
   /// \brief      short-time fourier transform similar with librosa.feature.stft
   /// \param      x             input audio signal
   /// \param      n_fft         length of the FFT size
@@ -166,15 +165,15 @@ public:
   /// \param      center        same as librosa
   /// \param      mode          pad mode. support "reflect","symmetric","edge"
   /// \return     complex-valued matrix of short-time fourier transform coefficients.
-  static std::vector<std::vector<std::complex<float>>> stft(std::vector<float>& x,
-    int n_fft, int n_hop,
-    const std::string& win, bool center,
-    const std::string& mode) {
+  static std::vector<std::vector<std::complex<float>>> stft(std::vector<float> &x,
+                                                            int n_fft, int n_hop,
+                                                            const std::string &win, bool center,
+                                                            const std::string &mode){
     Vectorf map_x = Eigen::Map<Vectorf>(x.data(), x.size());
     Matrixcf X = internal::stft(map_x, n_fft, n_hop, win, center, mode);
     std::vector<std::vector<std::complex<float>>> X_vector(X.rows(), std::vector<std::complex<float>>(X.cols(), 0));
-    for (int i = 0; i < X.rows(); ++i) {
-      auto& row = X_vector[i];
+    for (int i = 0; i < X.rows(); ++i){
+      auto &row = X_vector[i];
       Eigen::Map<Vectorcf>(row.data(), row.size()) = X.row(i);
     }
     return X_vector;
@@ -193,23 +192,22 @@ public:
   /// \param      f_min         lowest frequency (in Hz)
   /// \param      f_max         highest frequency (in Hz)
   /// \return     mel spectrogram matrix
-	static std::vector<std::vector<float>> melspectrogram(std::vector<float>& x,
-    int sr, int n_fft, int n_hop,
-    const std::string& win, bool center,
-    const std::string& mode, float power, int n_mels,
-    int fmin, int fmax) {
+  static std::vector<std::vector<float>> melspectrogram(std::vector<float> &x,
+                                                        int sr, int n_fft, int n_hop,
+                                                        const std::string &win, bool center,
+                                                        const std::string &mode, float power, int n_mels,
+                                                        int fmin, int fmax){
     Vectorf map_x = Eigen::Map<Vectorf>(x.data(), x.size());
     Matrixf mel = internal::melspectrogram(map_x, sr, n_fft, n_hop, win, center, mode, power, n_mels, fmin, fmax).transpose();
     std::vector<std::vector<float>> mel_vector(mel.rows(), std::vector<float>(mel.cols(), 0.f));
-    for (int i = 0; i < mel.rows(); ++i) {
-      auto& row = mel_vector[i];
+    for (int i = 0; i < mel.rows(); ++i){
+      auto &row = mel_vector[i];
       Eigen::Map<Vectorf>(row.data(), row.size()) = mel.row(i);
     }
     return mel_vector;
   }
-
 };
 
-}
+} // namespace librosa
 
 #endif
