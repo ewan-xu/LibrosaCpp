@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
   std::cout<<"MFCC runing time is "<< mfcc_duration.count() << "ms" <<std::endl;
   
   assert(!mels.empty());
-  std::cout<<"Verify the energy of mfcc features:"<<std::endl;
+  std::cout<<"Verify the energy of melspectrogram features:"<<std::endl;
   std::cout<<"mel.dims: ["<<mels.size()<<","<<mels[0].size()<<"]"<<std::endl;
   std::cout<<"reduce_sum_in_times: "<<"[ ";
   for(int i = 0 ; i < mels.size(); i ++) {
