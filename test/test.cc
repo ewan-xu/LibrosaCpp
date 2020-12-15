@@ -69,11 +69,11 @@ int main(int argc, char* argv[])
   auto stft_duration = std::chrono::duration_cast<std::chrono::milliseconds>(stft_end_time - stft_start_time);
   std::cout<<"STFT runing time is "<< stft_duration.count() << "ms" <<std::endl;
 
-  auto mfcc_start_time =  std::chrono::system_clock::now();
+  auto melspectrogram_start_time =  std::chrono::system_clock::now();
   std::vector<std::vector<float>> mels = librosa::Feature::melspectrogram(x, sr, n_fft, n_hop, "hann", true, "reflect", 2.f, n_mel, fmin, fmax);
-  auto mfcc_end_time =  std::chrono::system_clock::now();
-  auto mfcc_duration = std::chrono::duration_cast<std::chrono::milliseconds>(mfcc_end_time - mfcc_start_time);
-  std::cout<<"MFCC runing time is "<< mfcc_duration.count() << "ms" <<std::endl;
+  auto melspectrogram_end_time =  std::chrono::system_clock::now();
+  auto melspectrogram_duration = std::chrono::duration_cast<std::chrono::milliseconds>(melspectrogram_end_time - melspectrogram_start_time);
+  std::cout<<"Melspectrogram runing time is "<< melspectrogram_duration.count() << "ms" <<std::endl;
   
   assert(!mels.empty());
   std::cout<<"Verify the energy of melspectrogram features:"<<std::endl;

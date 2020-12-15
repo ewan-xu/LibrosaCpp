@@ -6,14 +6,15 @@ LibrosaCpp is a c++ implemention of librosa using Eigen
 ewan xu <ewan_xu@outlook.com>
 
 # About
-similar with Eigen, you can just use a single header [librosa.h](https://github.com/ewan-xu/LibrosaCpp/blob/main/LibrosaCpp/librosa.h) to compute short-time fourier transform coefficients or mel spectrogram
+similar with Eigen, you can just use a single header [librosa.h](https://github.com/ewan-xu/LibrosaCpp/blob/main/librosa/librosa.h) to compute short-time fourier transform coefficients or mel spectrogram
 
 # Usage
-1. copy the source directory 'LibrosaCpp' to your project
+1. copy the source directory 'librosa' to your project
 2. add the source directory to your project include path
 3. write a few lines of code
+
 ```cpp
-#include <LibrosaCpp/librosa.h>
+#include <librosa/librosa.h>
 ```
 ```cpp
   int sr = 16000;
