@@ -17,7 +17,7 @@
 */
 
 #include "wavreader.h"
-#include <LibrosaCpp/librosa.h>
+#include <librosa/librosa.h>
 
 #include <iostream>
 #include <vector>
