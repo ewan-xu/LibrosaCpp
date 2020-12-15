@@ -40,4 +40,4 @@ similar with Eigen, you can just use a single header [librosa.h](https://github.
 # Related projects
 - [librosa](https://github.com/librosa/librosa)
 - [eigen](https://gitlab.com/libeigen/eigen)
-
+- [vo-amrwbenc](https://github.com/mstorsjo/vo-amrwbenc/blob/master/wavreader.h)

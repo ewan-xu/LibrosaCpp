@@ -17,10 +17,13 @@
 */
 
 #include "wavreader.h"
-#include <LibrosaCpp/librosa.h>
+#include <librosa/librosa.h>
 
 #include <iostream>
 #include <vector>
+
+#include <chrono>
+#include <numeric>
 #include <algorithm>
 
 using namespace std;
@@ -52,13 +55,36 @@ int main(int argc, char* argv[])
     return static_cast<float>(a) / 32767.f;
   });
 
+  std::cout << "Sample rate: " << sr << "Hz" << std::endl;
+  
   int n_fft = 400;
   int n_hop = 160;
   int n_mel = 40;
   int fmin = 80;
   int fmax = 7600;
-  std::vector<std::vector<std::complex<float>>> X = librosa::Feature::stft(x, n_fft, n_hop, "hann", false, "reflect");
-  std::vector<std::vector<float>> mels = librosa::Feature::melspectrogram(x, sr, n_fft, n_hop, "hann", false, "reflect", 2.f, n_mel, fmin, fmax);
+
+  auto stft_start_time =  std::chrono::system_clock::now();
+  std::vector<std::vector<std::complex<float>>> X = librosa::Feature::stft(x, n_fft, n_hop, "hann", true, "reflect");
+  auto stft_end_time =  std::chrono::system_clock::now();
+  auto stft_duration = std::chrono::duration_cast<std::chrono::milliseconds>(stft_end_time - stft_start_time);
+  std::cout<<"STFT runing time is "<< stft_duration.count() << "ms" <<std::endl;
+
+  auto mfcc_start_time =  std::chrono::system_clock::now();
+  std::vector<std::vector<float>> mels = librosa::Feature::melspectrogram(x, sr, n_fft, n_hop, "hann", true, "reflect", 2.f, n_mel, fmin, fmax);
+  auto mfcc_end_time =  std::chrono::system_clock::now();
+  auto mfcc_duration = std::chrono::duration_cast<std::chrono::milliseconds>(mfcc_end_time - mfcc_start_time);
+  std::cout<<"MFCC runing time is "<< mfcc_duration.count() << "ms" <<std::endl;
+  
+  assert(!mels.empty());
+  std::cout<<"Verify the energy of mfcc features:"<<std::endl;
+  std::cout<<"mel.dims: ["<<mels.size()<<","<<mels[0].size()<<"]"<<std::endl;
+  std::cout<<"reduce_sum_in_times: "<<"[ ";
+  for(int i = 0 ; i < mels.size(); i ++) {
+	  float sum = std::accumulate(mels[i].begin(), mels[i].end(), 0.f, [](float& a, float& b) { return a+b;});
+	  std::cout<<sum;
+	  std::cout<<" ";
+  }
+  std::cout<<"]"<<std::endl;
 
   return 0;
 }
