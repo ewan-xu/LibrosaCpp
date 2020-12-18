@@ -41,7 +41,7 @@ typedef Eigen::Matrix<std::complex<float>, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 namespace internal{
 
-Vectorf pad(Vectorf &x, int left, int right, const std::string &mode, float value){
+static Vectorf pad(Vectorf &x, int left, int right, const std::string &mode, float value) {
   Vectorf x_paded = Vectorf::Constant(left + x.size() + right, value);
   x_paded.segment(left, x.size()) = x;
 
@@ -74,7 +74,7 @@ Vectorf pad(Vectorf &x, int left, int right, const std::string &mode, float valu
   return x_paded;
 }
 
-Matrixcf stft(Vectorf &x, int n_fft, int n_hop, const std::string &win, bool center, const std::string &mode){
+static Matrixcf stft(Vectorf &x, int n_fft, int n_hop, const std::string &win, bool center, const std::string &mode) {
   // hanning
   Vectorf window = 0.5 * (1.f - (Vectorf::LinSpaced(n_fft, 0.f, static_cast<float>(n_fft - 1)) * 2.f * M_PI / static_cast<float>(n_fft)).array().cos());
 
@@ -93,11 +93,11 @@ Matrixcf stft(Vectorf &x, int n_fft, int n_hop, const std::string &win, bool cen
   return X.leftCols(n_f);
 }
 
-Matrixf spectrogram(Matrixcf &X, float power = 1.f){
+static Matrixf spectrogram(Matrixcf &X, float power = 1.f) {
   return X.cwiseAbs().array().pow(power);
 }
 
-Matrixf melfilter(int sr, int n_fft, int n_mels, int fmin, int fmax){
+static Matrixf melfilter(int sr, int n_fft, int n_mels, int fmin, int fmax) {
   int n_f = n_fft / 2 + 1;
   Vectorf fft_freqs = (Vectorf::LinSpaced(n_f, 0.f, static_cast<float>(n_f - 1))) * static_cast<float>(sr) / static_cast<float>(n_fft);
 
@@ -141,7 +141,7 @@ Matrixf melfilter(int sr, int n_fft, int n_mels, int fmin, int fmax){
   return weights;
 }
 
-Matrixf melspectrogram(Vectorf &x, int sr, int n_fft, int n_hop,
+static Matrixf melspectrogram(Vectorf &x, int sr, int n_fft, int n_hop,
                         const std::string &win, bool center,
                         const std::string &mode, float power,
                         int n_mels, int fmin, int fmax){
