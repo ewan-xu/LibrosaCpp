@@ -42,6 +42,7 @@ similar with librosa, you can just use a single header [librosa.h](https://githu
 # TODO
 - other window function
 - other dct type
+- cepstral filtering
 
 # Related projects
 - [librosa](https://github.com/librosa/librosa)
