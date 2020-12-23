@@ -36,7 +36,7 @@ similar with librosa, you can just use a single header [librosa.h](https://githu
   // compute mel spectrogram
   std::vector<std::vector<float>> mels = librosa::Feature::melspectrogram(x, sr, n_fft, n_hop, window, center, pad_mode, power,n_mel, fmin, fmax);
   //compute mfcc
-  std::vector<std::vector<float>> mfcc = librosa::Feature::mfcc(x, sr, n_fft, n_hop,window,center,pad_mode,power,n_mel,fmin,fmax,n_mfcc,norm,type);
+  std::vector<std::vector<float>> mfcc = librosa::Feature::mfcc(x, sr, n_fft, n_hop, window, center, pad_mode, power, n_mel, fmin, fmax, n_mfcc, norm, type);
 ```
 
 # TODO
