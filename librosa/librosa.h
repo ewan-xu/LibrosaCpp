@@ -214,11 +214,9 @@ public:
   /// \param      f_min         lowest frequency (in Hz)
   /// \param      f_max         highest frequency (in Hz)
   /// \return     mel spectrogram matrix
-  static std::vector<std::vector<float>> melspectrogram(std::vector<float> &x,
-                                                        int sr, int n_fft, int n_hop,
-                                                        const std::string &win, bool center,
-                                                        const std::string &mode, float power, int n_mels,
-                                                        int fmin, int fmax){
+  static std::vector<std::vector<float>> melspectrogram(std::vector<float> &x, int sr, 
+                                                        int n_fft, int n_hop, const std::string &win, bool center, const std::string &mode,
+                                                        float power, int n_mels, int fmin, int fmax){
     Vectorf map_x = Eigen::Map<Vectorf>(x.data(), x.size());
     Matrixf mel = internal::melspectrogram(map_x, sr, n_fft, n_hop, win, center, mode, power, n_mels, fmin, fmax).transpose();
     std::vector<std::vector<float>> mel_vector(mel.rows(), std::vector<float>(mel.cols(), 0.f));
@@ -245,11 +243,10 @@ public:
   /// \param      norm          ortho-normal dct basis
   /// \param      type          dct type. currently only supports 'type-II'
   /// \return     mfcc matrix
-  static std::vector<std::vector<float>> mfcc(std::vector<float> &x,
-    int sr, int n_fft, int n_hop,
-    const std::string &win, bool center,
-    const std::string &mode, float power, int n_mels,
-    int fmin, int fmax,int n_mfcc, bool norm, int type) {
+  static std::vector<std::vector<float>> mfcc(std::vector<float> &x, int sr,
+                                              int n_fft, int n_hop, const std::string &win, bool center, const std::string &mode,
+                                              float power, int n_mels, int fmin, int fmax,
+                                              int n_mfcc, bool norm, int type) {
     Vectorf map_x = Eigen::Map<Vectorf>(x.data(), x.size());
     Matrixf mel = internal::melspectrogram(map_x, sr, n_fft, n_hop, win, center, mode, power, n_mels, fmin, fmax).transpose();
     Matrixf mel_db = internal::power2db(mel);
