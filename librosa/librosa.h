@@ -74,6 +74,38 @@ static Vectorf pad(Vectorf &x, int left, int right, const std::string &mode, flo
   }
   return x_paded;
 }
+  static Vectorcf pad(Vectorcf &x, int left, int right, const std::string &mode, float value){
+  Vectorcf x_paded = Vectorcf::Constant(left+x.size()+right, value);
+  x_paded.segment(left, x.size()) = x;
+
+  if (mode.compare("reflect") == 0){
+    for (int i = 0; i < left; ++i){
+      x_paded[i] = x[left-i];
+    }
+    for (int i = left; i < left+right; ++i){
+      x_paded[i+x.size()] = x[x.size()-2-i+left];
+    }
+  }
+
+  if (mode.compare("symmetric") == 0){
+    for (int i = 0; i < left; ++i){
+      x_paded[i] = x[left-i-1];
+    }
+    for (int i = left; i < left+right; ++i){
+      x_paded[i+x.size()] = x[x.size()-1-i+left];
+    }
+  }
+
+  if (mode.compare("edge") == 0){
+    for (int i = 0; i < left; ++i){
+      x_paded[i] = x[0];
+    }
+    for (int i = left; i < left+right; ++i){
+      x_paded[i+x.size()] = x[x.size()-1];
+    }
+  }
+  return x_paded;
+}
 
 static Matrixcf stft(Vectorf &x, int n_fft, int n_hop, const std::string &win, bool center, const std::string &mode){
   // hanning
@@ -94,8 +126,91 @@ static Matrixcf stft(Vectorf &x, int n_fft, int n_hop, const std::string &win, b
   return X.leftCols(n_f);
 }
 
+
 static Matrixf spectrogram(Matrixcf &X, float power = 1.f){
   return X.cwiseAbs().array().pow(power);
+}
+
+
+static Vectorf iFFT_real_from_stft(Vectorcf &x, int n_fft = NULL, int n_hop = NULL,  bool center = true, const std::string &mode = "constant")
+{
+  int n_f = n_fft/2 + 1;
+
+  Vectorcf full(n_fft);
+
+  full.head(n_f) = x;
+
+  //Conjugate bins 1-nf-1 to full exclude 0 and Nyquist
+  for (int j = 1; j < n_f - 1; j++)
+    full[n_fft-j] = std::conj(x[j]);
+
+  std::vector<std::complex<float>> freq(n_fft);
+  std::vector<std::complex<float>> time(n_fft);
+
+  for (int i = 0; i < n_fft; i++)
+  {
+    freq[i] = full[i];
+  }
+
+  Eigen::FFT<float> fft;
+
+  //Do iFFT
+  fft.inv(time, freq);
+
+  Vectorf out(n_fft);
+  for (int i = 0; i < n_fft; i++)
+    out[i] = time[i].real();
+
+  return out;
+}
+
+  static Vectorcf rebuildHermitian(Vectorcf& half, int n_fft)
+{
+  int n_f = n_fft/2 + 1;
+
+  Vectorcf full(n_fft);
+  full.head(n_f) = half;
+
+  for (int j = 1; j < n_f -1; j++)
+    full[n_fft-j] = std::conj(half[j]);
+
+  return full;
+
+}
+
+ static Eigen::MatrixXcf toEigen(const std::vector<std::vector<std::complex<float>>>& v) {
+  int rows = v.size();
+  int cols = v[0].size();
+  Eigen::MatrixXcf m(cols, rows);
+  for (int i = 0; i < cols; i++)
+    for (int j = 0; j < rows; j++)
+      m(i, j) = v[j][i];
+  return m;
+}
+
+
+static Vectorf iFFT(Vectorcf &x, int n_fft = NULL, int n_hop = NULL,  bool center = true, const std::string &mode = "constant" )
+{
+  if (!n_fft)
+    n_fft = x.size()/2;
+
+  if (!n_hop)
+    n_hop = n_fft/4;
+
+  //Hann window(periodic)
+  Vectorcf x_hermitian = rebuildHermitian(x, n_fft);
+  Vectorf window = 0.5*(1.f-(Vectorf::LinSpaced(n_fft, 0.f, static_cast<float>(n_fft-1))*2.f*M_PI/n_fft).array().cos());
+
+  int pad_len = center ? n_fft / 2 : 0;
+
+  std::vector<std::complex<float>> freq(x_hermitian.data(), x_hermitian.data() + n_fft);
+
+  std::vector<float> time(n_fft);
+
+  Eigen::FFT<float> fft;
+  fft.inv(time, freq);
+
+  return Eigen::Map<Vectorf>(time.data(), n_fft);
 }
 
 static Matrixf melfilter(int sr, int n_fft, int n_mels, int fmin, int fmax){
@@ -199,6 +314,54 @@ public:
       Eigen::Map<Vectorcf>(row.data(), row.size()) = X.row(i);
     }
     return X_vector;
+  }
+
+
+  /// \brief Short time inverse Fourier transform similar to librosa.feature.istft
+  /// \param v Reference to input STFT
+  /// \param n_fft Total size of 1 FFT
+  /// \param n_hop Hop value: How much the FFT window should offset by
+  /// \param win Window function. Currently only supports Hann
+  /// \param center To check if padding has to be done symmetrically about the center
+  /// \param mode Pad mode. Currently supports "reflect", "symmetric" and "edge". Reflect reccomended
+  /// \return Float vector consisting of the time domain signal
+  static inline std::vector<float> istft(std::vector<std::vector<std::complex<float>>> &v, int n_fft, int n_hop, const std::string &win, bool center,
+                                         const std::string &mode)
+  {
+    Eigen::MatrixXcf x = internal::toEigen(v); //Convert to matrix for easier operation
+    int num_frames = x.cols();
+    int out_size = n_fft + (num_frames-1)*n_hop;
+
+
+    //Filling for overlapp add
+    Vectorf X = Vectorf::Zero(out_size);
+    Vectorf W = Vectorf::Zero(out_size);
+
+    // Hann window
+    Vectorf window = 0.5f * (1.f -
+        (Vectorf::LinSpaced(n_fft, 0.f, float(n_fft-1))
+         * 2.f * M_PI / n_fft).array().cos());
+
+    for (int i = 0; i < num_frames; i++)
+    {
+      Vectorcf row = x.col(i);
+      auto time_frame = internal::iFFT(row, n_fft, n_hop);
+
+      time_frame = time_frame.array()*window.array(); //Windowing iFFT
+      int start = i * n_hop;
+
+      X.segment(start, n_fft) += time_frame;
+      W.segment(start, n_fft).array() += window.array().square();
+    }
+
+    //Normalising
+    for (int i = 0; i < out_size; i++)
+      if (W[i] > 1e-8) X[i] = X[i] / W[i];
+
+    //Trimming the padding frames
+    std::vector<float> X_vector(X.data() + n_fft/2, X.data() + out_size - n_fft/2);
+    return X_vector;
+
   }
 
   /// \brief      compute mel spectrogram similar with librosa.feature.melspectrogram
