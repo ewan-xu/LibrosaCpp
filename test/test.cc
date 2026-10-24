@@ -28,9 +28,13 @@
 
 using namespace std;
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
   void* h_x = wav_read_open("samples/p225_002.wav");
+  if (h_x == nullptr)
+  {
+    cerr << "open wav file error" << endl;
+    return -1;
+  }
 
   int format, channels, sr, bits_per_sample;
   unsigned int data_length;

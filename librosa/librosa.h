@@ -167,8 +167,8 @@ static Matrixf dct(Matrixf& x, bool norm, int type) {
   Matrixf dct = x*coeff.transpose();
   // ortho
   if (norm) {
-    Vectorf ortho = Vectorf::Constant(N, std::sqrtf(0.5f/N));
-    ortho[0] = std::sqrtf(0.25f/N);
+    Vectorf ortho = Vectorf::Constant(N, std::sqrt(0.5f/static_cast<float>(N)));
+    ortho[0] = std::sqrt(0.25f/static_cast<float>(N));
     dct = dct*ortho.asDiagonal();
   }
   return dct;
